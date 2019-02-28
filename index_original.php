@@ -79,12 +79,22 @@
 <div class="container">
     <div class="row">
         <a type="button" class="btn btn-primary" href = "addSupplier.php">Add New Supplier</a> <br/>
-        <a type="button" class="btn btn-primary" href = "addPayment.php">Add New Payment</a> <br/>
+        <a type="button" class="btn btn-primary" href = "#">Add New Payment</a> <br/>
     </div>
     <ul class="list-group" id = "content">
-        <li class="list-group-item d-flex justify-content-between align-items-center">1234567 - Recipient 1 <a href=#>Update</a></li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">1234567 - Recipient 2 <a href=#>Update</a></li>
-        <li class="list-group-item d-flex justify-content-between align-items-center">1234567 - Recipient 3 <a href=#>Update</a></li>
+    <?php
+        //TODO: fetch the data from the db in the cloud
+        echo getPayments();
+        $people = array("Alice", "Bob", "Catherine");
+        //print_r($people);
+        //echo($people[2]);
+        //echo "<p>Something just like this</p>";
+        ///echo "<h1>";
+        foreach($people as $person){
+            //echo $person . ' ';
+        }
+        //echo "</h1>";
+    ?>
     </ul>
 </div>
 </body>
