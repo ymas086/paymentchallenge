@@ -8,35 +8,42 @@
             
             function saveAmount(){
                 //push amount to the database and return to home page
-               $dbhost = 'db4free.net:3306';
-               $dbuser = 'yusufms';
-               $dbpass = 'Pass@word1';
-               $dbname = 'yusufms';
-               $conn = mysql_connect($dbhost, $dbuser, $dbpass);
+               $dbhost = "db4free.net:3306";
+               $dbuser = "yusufms";
+               $dbpass = "pass@word1";
+               $dbname = "yusufms";
+               $conn = new mysqli($dbhost, $dbuser, $dbpass, $dbname);
                
-               if(! $conn ) {
-                  die('Could not connect: ' . mysql_error());
+               if ($conn->connect_error) {
+                   die("Connection failed: " . $conn->connect_error);
                }
-               
+
+
+               $amount = intval($_POST["amount"]);
+               $amount *= 100;
+               print strval($amount);
                $sql = 'INSERT INTO Payments '.
                   '(supplierid, amount, dateadded) '.
-                  'VALUES ( '.$_POST[].','.$_POST[].','date("Y/m/d"))';';
-                  
-               mysql_select_db($dbname);
-               $retval = mysql_query( $sql, $conn );
-               
-               if(! $retval ) {
-                  die('Could not push data: ' . mysql_error());
-               } else{
-                   echo "Entered data successfully\n";
-               }
-               mysql_close($conn);
-               //redirect to home page
+                  'VALUES ( "'.
+                  $_POST["recipient"].
+                  '",'.
+                  strval($amount).
+                  ',now());';
+                if ($conn->query($sql) === TRUE) {
+                    echo "New record created successfully";
+                } else {
+                    echo "Error: " . $sql . "<br>" . $conn->error;
+                }
+                
+                $conn->close();            
+               header('Location: index.php');
+               exit();
             }
         ?>
         <link rel="stylesheet" href="bootstrap.css">
         <script>
             window.onload = function(){
+                //get list of recipients to populate dropdown list
                 var xmlhttp = new XMLHttpRequest();
                 var url = "https://api.paystack.co/transferrecipient";
         
@@ -55,11 +62,8 @@
                     var out = "";
                     var i;
                     for(i = 0; i < arr["data"].length; i++) {
-                        //out += '<a href="' + arr[i].url + '">' + 
-                        //arr[i].display + '</a><br>';
-                        //out += arr[i]["data"]["id"] + " - " + item["name"] + "<br/>";
                         out += "<option value="
-                        out += "\""  + arr["data"][i]["id"] + "\">" + arr["data"][i]["name"];
+                        out += "\""  + arr["data"][i]["recipient_code"] + "\">" + arr["data"][i]["name"];
                         out += "</option>";
                     }
                     console.log(out);
@@ -93,10 +97,6 @@
                 <a class="nav-link" href="#">About</a>
               </li>
             </ul>
-            <form class="form-inline my-2 my-lg-0">
-              <input class="form-control mr-sm-2" type="text" placeholder="Search">
-              <button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
-            </form>
           </div>
         </nav>
         <div class="container">
@@ -109,12 +109,13 @@
                     <label class="col-form-label" for="recipient">Recipient</label>
                         <select class="custom-select" id="recipient" name="recipient"></select>
                     <label class="col-form-label" for="amount">Amount</label>
-                        <input type="text" class="form-control" placeholder="Enter Amount in Naira" id="amount" name="amount">
-                    <button type="submit" class="btn btn-primary" href = "addSupplier.php">Save</button>
+                        <input type="number" class="form-control" placeholder="Enter amount" id="amount" name="amount">
+                    <button type="submit" class="btn btn-primary">Save</button>
                     <?php
                         if(isset($_POST["amount"]))
                         {
                             //send the information to the paystack URL
+                            echo $_POST["amount"];
                             saveAmount();
                         }
                     ?>
