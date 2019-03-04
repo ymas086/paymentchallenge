@@ -19,26 +19,6 @@
                 );
                                 
                 $content = json_encode($data);
-                
-                $options = array(
-                  'http' => array(
-                    'method'  => 'POST',
-                    'content' => json_encode( $data ),
-                    'header'=>  "Authorization: Bearer sk_test_4c4c90d3bd67ef9e750c6c60a3c9c1fbe2354525"
-                    )
-                );
-                
-                $context  = stream_context_create( $options );
-                $result = file_get_contents( $url, false, $context );
-                $response = json_decode( $result );
-                
-                //echo $response;
-                
-                if($response["status"] == true){
-                    header('Location: index.php');
-                    exit();
-                }
-                
                 $curl = curl_init($url);
                 curl_setopt($curl, CURLOPT_HEADER, false);
                 curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
@@ -51,12 +31,6 @@
                 
                 $status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
                 
-                //echo $json_response;
-                
-//                if ( $status != 201 ) {
-//                    die("Error: call to URL $url failed with status $status, response $json_response, curl_error " . curl_error($curl) . ", curl_errno " . curl_errno($curl));
-//                }
-
                 curl_close($curl);
                 
                 $response = json_decode($json_response, true);
@@ -71,38 +45,30 @@
             }
         ?>
         <link rel="stylesheet" href="bootstrap.css">
+        <title>Add Supplier</title>
         <script>
             window.onload = function(){
-                //get list of recipients to populate dropdown list
-                var xmlhttp = new XMLHttpRequest();
-                var url = "https://api.paystack.co/bank";
-        
-                xmlhttp.onreadystatechange = function() {
-                    if (this.readyState == 4 && this.status == 200) {
-                        var myArr = JSON.parse(this.responseText);
-                        myFunction(myArr);
-                    }
-                };
-                xmlhttp.open("GET", url, true);
-                xmlhttp.setRequestHeader("Authorization", "Bearer sk_test_4c4c90d3bd67ef9e750c6c60a3c9c1fbe2354525")
-                xmlhttp.send();
-                
-                function myFunction(arr) {
-                    console.log(arr.data);
-                    var out = "";
-                    var i;
-                    for(i = 0; i < arr["data"].length; i++) {
-                        out += "<option value="
-                        out += "\""  + arr["data"][i]["code"] + "\">" + arr["data"][i]["name"];
-                        out += "</option>";
-                    }
-                    console.log(out);
-                    document.getElementById("bank").innerHTML += out;
+                var validation = function(){
+                    //get list of recipients to populate dropdown list
+                    var xmlhttp = new XMLHttpRequest();
+                    var accountno = document.getElementById("accountno").value;
+                    var bankcode = document.getElementById("bank").value;
+                    var url = "getAccountName.php?account_number=" + accountno + "&bank_code=" + bankcode;
+            
+                    xmlhttp.onreadystatechange = function() {
+                        if (xmlhttp.readyState == XMLHttpRequest.DONE){
+                            console.log(this.responseText);
+                            document.getElementById("accountname").value = xmlhttp.responseText;
+                        }
+                    };
+                    xmlhttp.open("GET", url, true);
+                    xmlhttp.send();            
                 }
+                document.getElementById("accountno").onchange = validation;
+//                document.getElementById("bank").oninput = validation;
+                
             }
-    
         </script>
-        <title>Home - View Recipients</title>
     </head>
     
     <body>
@@ -132,16 +98,50 @@
                     <label class="col-form-label" for="name">Supplier Name</label>
                         <input type = "text" class="form-control" id="name" name="name"></select>
                     <label class="col-form-label" for="bank">Bank</label>
-                        <select class="custom-select" id="bank" name="bank"></select>
+                        <select class="custom-select" id="bank" name="bank">
+                            <?php
+                            //populate the Bank select list using a remote API call to the transfer recipients end point
+                            
+                                $url = "https://api.paystack.co/bank";
+                                
+                                $curl = curl_init($url);
+                                curl_setopt($curl, CURLOPT_HEADER, false);
+                                curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+                                curl_setopt($curl, CURLOPT_HTTPHEADER,
+                                        array("Content-type: application/json", "Authorization: Bearer sk_test_4c4c90d3bd67ef9e750c6c60a3c9c1fbe2354525"));
+                                //curl_setopt($curl, CURLOPT_POST, true);
+                                
+                                $json_response = curl_exec($curl);
+                                                                        
+                                curl_close($curl);
+                                
+                                $response = json_decode($json_response, true);
+
+                                //echo $response["data"]["recipient_code"];
+                                if($response["status"]== 1){
+                                    foreach($response["data"] as $bank){
+                                        echo '<option value="';
+                                        echo $bank["code"].'">'.$bank["name"];
+                                        echo "</option>";
+                                    }
+                                } else {
+                                    echo $response["message"];
+                                }
+                            ?>
+                        </select>
                     <label class="col-form-label" for="accountno">Supplier Account Number</label>
                         <input type="number" class="form-control" placeholder="Enter Account Number" id="accountno" name="accountno">
+                        
+                    <label class="col-form-label" for="accountname">Account Name</label>
+                        <input type="text" class="form-control" placeholder="" id="accountname" name="accountname" disabled>
                     <button type="submit" class="btn btn-primary">Save</button>
                     <?php
                         if(isset($_POST["accountno"]))
                         {
                             //send the information to the paystack URL
-                            //echo $_POST["accountno"];
-                            saveSupplier();
+                            //if(validate()){
+                                saveSupplier();
+                            //}
                         }
                     ?>
                 </div>
