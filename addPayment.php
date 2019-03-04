@@ -43,46 +43,14 @@
             }
         ?>
         <link rel="stylesheet" href="bootstrap.css">
-        <script>
-            window.onload = function(){
-                //get list of recipients to populate dropdown list
-                var xmlhttp = new XMLHttpRequest();
-                var url = "https://api.paystack.co/transferrecipient";
-        
-                xmlhttp.onreadystatechange = function() {
-                    if (this.readyState == 4 && this.status == 200) {
-                        var myArr = JSON.parse(this.responseText);
-                        myFunction(myArr);
-                    }
-                };
-                xmlhttp.open("GET", url, true);
-                xmlhttp.setRequestHeader("Authorization", "Bearer sk_test_4c4c90d3bd67ef9e750c6c60a3c9c1fbe2354525")
-                xmlhttp.send();
-                
-                function myFunction(arr) {
-                    console.log(arr.data);
-                    var out = "";
-                    var i;
-                    for(i = 0; i < arr["data"].length; i++) {
-                        out += "<option value="
-                        out += "\""  + arr["data"][i]["recipient_code"] + "\">" + arr["data"][i]["name"];
-                        out += "</option>";
-                    }
-                    console.log(out);
-                    
-                    document.getElementById("recipient").innerHTML += out;
-                    document.getElementById("recipientname").value = document.getElementById("recipient").options[document.getElementById("recipient").selectedIndex].text;
-                }
-            }
-    
-        </script>
-        <title>Home - View Recipients</title>
+        <title>Add Payment</title>
     </head>
     
     <body>
         <nav class="navbar navbar-expand-lg navbar-light bg-light">
           <a class="navbar-brand" href="#">Paystack Challenge</a>
-          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarColor01" 
+                aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
         
@@ -104,11 +72,46 @@
             <form method="post" action="addPayment.php">        
                 <div class="form-group">
                     <label class="col-form-label" for="recipient">Recipient</label>
-                        <select class="custom-select" id="recipient" name="recipient" onchange="document.getElementById('recipientname').value = this.options[this.selectedIndex].text"></select>
-                        <input type = "hidden" id="recipientname" name="recipientname"/>
-                    <label class="col-form-label" for="amount">Amount</label>
-                        <input type="number" class="form-control" placeholder="Enter amount" id="amount" name="amount">
-                    <button type="submit" class="btn btn-primary">Save</button>
+                        <select class="custom-select" id="recipient" name="recipient" 
+                            onchange="document.getElementById('recipientname').value = this.options[this.selectedIndex].text">
+                            <?php
+                            //populate the select list using a remote API call to the transfer recipients end point
+                            
+                                $url = "https://api.paystack.co/transferrecipient";
+                                
+                                $curl = curl_init($url);
+                                curl_setopt($curl, CURLOPT_HEADER, false);
+                                curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+                                curl_setopt($curl, CURLOPT_HTTPHEADER,
+                                        array("Content-type: application/json", "Authorization: Bearer sk_test_4c4c90d3bd67ef9e750c6c60a3c9c1fbe2354525"));
+                                //curl_setopt($curl, CURLOPT_POST, true);
+                                
+                                $json_response = curl_exec($curl);
+                                                                        
+                                curl_close($curl);
+                                
+                                $response = json_decode($json_response, true);
+
+                                //echo $response["data"]["recipient_code"];
+                                if($response["status"]== 1){
+                                    foreach($response["data"] as $recipient){
+                                        echo '<option value="';
+                                        echo $recipient["recipient_code"].'">'.$recipient["name"];
+                                        echo "</option>";
+                                    }
+                                    $firstname = $response["data"][0]["name"];
+                                } else {
+                                    echo $response["message"];
+                                }
+                            ?>
+                        </select>
+                        <?php 
+                            echo "<input type = 'hidden' id='recipientname' name='recipientname'".
+                            "value = '".$firstname."'/>";
+                        ?>
+                        <label class="col-form-label" for="amount">Amount</label>
+                            <input type="number" class="form-control" placeholder="Enter amount" id="amount" name="amount">
+                        <button type="submit" class="btn btn-primary">Save</button>
                     <?php
                         if(isset($_POST["amount"]))
                         {
